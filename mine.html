@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Example</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="three.min.js"></script>
+    <script src="menu.js"></script>
+    <script>
+
+        var dummyx = 0
+        var dummyy = 0
+        var dummyz = 0
+        var dummyAltura = 3
+        var dummy
+
+        //MenuPrincipal()
+        function MenuPrincipal() {
+            Menu('Menu Base', () => {
+
+                setInterval(() => {
+                    if (dummy) {
+                        dummy.position.set(dummyx, dummyy, dummyz);
+                    }
+                }, 1);
+
+                addOption(() => {
+                    Button('Criar Dummy', () => {
+                        dummy = DRAW_BOX(false, 'madeira.jpeg', dummyx, dummyy, dummyz)
+
+                    })
+                })
+                addOption(() => {
+                    Button('Criar Arvore', () => {
+                        BUILD_THREE(dummyx, dummyy, dummyz, dummyAltura)
+
+                    })
+                })
+                addOption(() => {
+                    Button('Criar Chao', () => {
+                        // BUILD_THREE(dummyx,dummyy,dummyz,dummyAltura)
+                        DRAW_PLANE()
+                    })
+                })
+                addOption(() => {
+                    Button('Criar Ceu', () => {
+                        DRAW_SKYBOX()
+                    })
+                })
+                addOption(() => {
+                    Button('Criar Iluminacao', () => {
+                        DRAW_LIGHT()
+                    })
+                })
+                addOption(() => {
+                    Button('Criar Sol', () => {
+                        DRAW_SUN()
+                    })
+                })
+
+                addOption(() => {
+                    Button('Criar Construcao', () => {
+                        BUILD_HOUSE(dummyx, dummyy, dummyz, dummyAltura)
+                    })
+                })
+
+                addOption(() => {
+                    Titulo('X')
+                    InputRangeInt(dummyx, -10, 10, (x) => {
+                        dummyx = x;
+                    })
+
+                })
+                addOption(() => {
+                    Titulo('Y')
+                    InputRangeInt(dummyy, -10, 10, (x) => {
+                        dummyy = x;
+                    })
+
+                })
+
+                addOption(() => {
+                    Titulo('Z')
+                    InputRangeInt(dummyz, -10, 10, (x) => {
+                        dummyz = x;
+                    })
+
+                })
+                addOption(() => {
+                    Titulo('Altura')
+                    InputRangeInt(dummyAltura, 1, 10, (x) => {
+                        dummyAltura = x;
+                    })
+
+                })
+                addBreak('')
+                addOption(() => {
+                    Titulo('Nuvens')
+                    InputRangeInt(1, 1, 10, (x) => {
+                        veloCeu = x * 0.0005;
+                    })
+
+                })
+
+            })
+        }
+
+
+
+
+
+
+
+
+
+
+        var veloCeu = 0.0001
+        var cubosComColisao = [];
+
+
+        // Criar cena, câmera e renderizador
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+
+
+
+        // Configuração inicial da câmera
+        camera.position.set(0, 1, 5);
+        //camera.lookAt(0, 0.5, -5); // Faz a câmera olhar para o cubo
+
+        // Variáveis de controle
+        let startX, startY;
+
+        function onTouchStart(event) {
+            startX = event.touches[0].pageX;
+            startY = event.touches[0].pageY;
+        }
+
+        function onTouchMove(event) {
+
+            const moveX = event.touches[0].pageX - startX;
+            const moveY = event.touches[0].pageY - startY;
+
+            const rotationSpeed = 0.005;
+            const moveSpeed = 0.02;
+
+            // Rotação horizontal da câmera
+            camera.rotation.y -= moveX * rotationSpeed;
+            // Movimentação para frente e para trás
+            const newPositionX = camera.position.x - Math.sin(camera.rotation.y) * moveY * moveSpeed;
+            const newPositionZ = camera.position.z - Math.cos(camera.rotation.y) * moveY * moveSpeed;
+
+
+            let colidiu = false
+
+            for (let cube of cubosComColisao) {
+                const cubeMinX = cube.position.x - 1.0;
+                const cubeMaxX = cube.position.x + 1.0;
+                const cubeMinZ = cube.position.z - 1.0;
+                const cubeMaxZ = cube.position.z + 1.0;
+
+                // Verificação de colisão
+                if (newPositionX > cubeMinX &&
+                    newPositionX < cubeMaxX &&
+                    newPositionZ > cubeMinZ &&
+                    newPositionZ < cubeMaxZ) {
+                    colidiu = true
+                    break
+                }
+            }
+
+
+            if (!colidiu) {
+                camera.position.x = newPositionX;
+                camera.position.z = newPositionZ;
+            }
+            startX = event.touches[0].pageX;
+            startY = event.touches[0].pageY;
+
+
+        }
+
+        document.addEventListener('touchstart', onTouchStart, false);
+        document.addEventListener('touchmove', onTouchMove, false);
+
+        // Função de animação
+
+
+
+        const chao = DRAW_PLANE()
+        const carvao = DRAW_BOX(true, 'carvao.jpeg', 0, 0.6, 0)
+        const madeira = DRAW_BOX(true, 'madeira.jpeg', 3, 0.6, 0)
+        const terra = DRAW_BOX(true, 'terra.jpeg', 6, 0.6, 0)
+        const pedra = DRAW_BOX(true, 'pedra.png', 9, 0.6, 0)
+        const sky = DRAW_SKYBOX()
+        const sol = DRAW_SUN()
+        const sombras = DRAW_LIGHT()
+
+        for (let i = 3; i > 0; i--) {
+            BUILD_THREE((i*(-3)),0.5,0,i*3)
+            
+        }
+
+        BUILD_HOUSE(-20,0.5,0,5)
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+
+
+
+
+        // BUILD_THREE(0, 0.5, 0, 3)
+
+        function BUILD_THREE(x, y, z, altura) {
+            for (let i = 0; i < altura; i++) {
+                DRAW_BOX(false, 'madeira.jpeg', x, y + i, z)
+            }
+            var copa = 2
+
+
+            DRAW_BOX(false, 'grama.jpeg', x, y + altura, z, copa, copa, copa, 10, 10)
+
+
+            for (let index = 0; index < 5; index++) {
+                DRAW_BOX(false, 'grama.jpeg', x+Math.floor(Math.random() * (copa)), altura + Math.floor(Math.random() * (copa)),z+ Math.floor(Math.random() * (copa)), 1, 1, 1, 10, 10)
+                DRAW_BOX(false, 'grama.jpeg', x-Math.floor(Math.random() * (copa)) * -1, altura - Math.floor(Math.random() * (copa)),z- Math.floor(Math.random() * (copa)) * -1, 1, 1, 1, 10, 10)
+
+
+
+            }
+        }
+
+
+
+        function BUILD_HOUSE(x, y, z, altura = 4) {
+            for (let i = 0; i < altura; i++) {
+                DRAW_BOX(false, 'pedra.png', x, y + i, z)
+                DRAW_BOX(false, 'madeira.jpeg', x + 1, y + i, z)
+                DRAW_BOX(false, 'madeira.jpeg', x + 2, y + i, z)
+                DRAW_BOX(false, 'madeira.jpeg', x + 3, y + i, z)
+                DRAW_BOX(false, 'pedra.png', x + 4, y + i, z)
+            }
+            for (let i = 0; i < altura; i++) {
+                //DRAW_BOX(false, 'pedra.png', x, y, z)
+                DRAW_BOX(false, 'madeira.jpeg', x, y + i, z - 1)
+                DRAW_BOX(false, 'madeira.jpeg', x, y + i, z - 2)
+                DRAW_BOX(false, 'madeira.jpeg', x, y + i, z - 3)
+                DRAW_BOX(false, 'pedra.png', x, y + i, z - 4)
+
+            }
+            for (let i = 0; i < altura; i++) {
+                DRAW_BOX(false, 'madeira.jpeg', x + 1, y + i, z - 4)
+                DRAW_BOX(false, 'madeira.jpeg', x + 2, y + i, z - 4)
+                DRAW_BOX(false, 'madeira.jpeg', x + 3, y + i, z - 4)
+                DRAW_BOX(false, 'pedra.png', x + 4, y + i, z - 4)
+
+            }
+            for (let i = 0; i < altura; i++) {
+                DRAW_BOX(false, 'madeira.jpeg', x + 4, y + i, z - 1)
+                DRAW_BOX(false, 'madeira.jpeg', x + 4, y + i, z - 2)
+                DRAW_BOX(false, 'madeira.jpeg', x + 4, y + i, z - 3)
+
+            }
+
+
+        }
+
+
+        document.body.addEventListener('keydown', (e) => {
+            if (e.key == 'm') {
+                JUMP(0.03, 3.0)
+            }
+        })
+
+        function JUMP(velocidadd = 0.03, altMax = 3.0) {
+            var pi = camera.position.z.toFixed(4) / 3;
+            camera.position.y = pi
+            var f = pi
+            var lp1 = setInterval(() => {
+                f += velocidadd
+                camera.position.y = f
+                if (f >= altMax) {
+                    clearInterval(lp1)
+                    var lp2 = setInterval(() => {
+                        f -= velocidadd
+                        camera.position.y = f
+                        if (f <= 1.0) {
+                            clearInterval(lp2)
+                        }
+                    }, 1);
+                }
+            }, 1);
+        }
+
+
+        function DRAW_PLANE(textura = 'grama.jpeg', x = 0, y = 0, z = 0, w = 500, h = 500) {
+            const groundTextureUrl = textura;
+            const textureLoader = new THREE.TextureLoader();
+            const groundTexture = textureLoader.load(groundTextureUrl);
+
+            // Criação do chão
+            const groundGeometry = new THREE.PlaneGeometry(w, h);
+            const groundMaterial = new THREE.MeshStandardMaterial({ map: groundTexture });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+
+            ground.rotation.x = -Math.PI / 2;
+
+            //ground.size.y = 0;
+
+            scene.add(ground);
+
+
+            groundTexture.wrapS = THREE.RepeatWrapping;
+            groundTexture.wrapT = THREE.RepeatWrapping;
+            groundTexture.repeat.set(700, 700); // Ajustar conforme necessário
+
+            ground.id = '111'
+            ground.position.set(x, y, z)
+
+            ground.receiveShadow = true
+            return ground
+
+        }
+
+
+
+
+
+
+        function DRAW_LIGHT() {
+            const light = new THREE.DirectionalLight(0x444444, 3);
+            light.position.set(10, 10, 10).normalize();
+            light.castShadow = true
+            scene.add(light);
+            return light
+        }
+
+
+
+        function DRAW_SUN() {
+            const luz = new THREE.AmbientLight(0x666666, 1);
+            luz.position.set(0, 0, 0).normalize();
+            luz.castShadow = true
+            scene.add(luz);
+            return luz
+        }
+
+
+        function DRAW_BOX(colisao = false, textura = 'carvao.jpeg', x, y, z, tX = 1, tY = 1, tZ = 1, repeticaoTexturaX = 1, repeticaoTexturaY = 1) {
+            const cubeTextureUrl = textura;
+            const textureLoader = new THREE.TextureLoader();
+            const cubeTexture = textureLoader.load(cubeTextureUrl);
+
+            const cubeGeometry = new THREE.BoxGeometry(tX, tY, tZ);
+            const cubeMaterial = new THREE.MeshStandardMaterial({ map: cubeTexture });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(x, y, z);
+
+            cubeTexture.wrapS = THREE.RepeatWrapping;
+            cubeTexture.wrapT = THREE.RepeatWrapping;
+            cubeTexture.repeat.set(repeticaoTexturaX, repeticaoTexturaY);
+
+            if (colisao) {
+                cubosComColisao.push(cube)
+            }
+            cube.receiveShadow = true
+            scene.add(cube);
+            return cube;
+        }
+
+        function DRAW_SKYBOX(textura = 'ceu.jpeg', movimentar = true, repeticaoTexturaX = 1, repeticaoTexturaY = 2) {
+            const skyTextureUrl = textura;
+            const textureLoader = new THREE.TextureLoader();
+            const skyTexture = textureLoader.load(skyTextureUrl);
+
+            const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
+            const skyMaterial = new THREE.MeshBasicMaterial({
+                map: skyTexture,
+                side: THREE.BackSide // Inverter a esfera para a câmera ver a parte interna
+            });
+            const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+
+            skyTexture.wrapS = THREE.RepeatWrapping;
+            skyTexture.wrapT = THREE.RepeatWrapping;
+            skyTexture.repeat.set(repeticaoTexturaX, repeticaoTexturaY);
+
+            scene.add(sky);
+
+
+            if (movimentar) {
+                var z = 0
+
+                setInterval(() => {
+                    sky.rotation.y = z
+                    z -= veloCeu
+                }, 1);
+            }
+            return sky;
+        }
+
+
+
+
+    </script>
+</body>
+
+</html>
